@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#FAF8F5">
+  <meta name="referrer" content="no-referrer">
+  <title>ウィッシュノート</title>
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" type="image/png" href="icons/favicon.png">
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    html, body {
+      height: 100%;
+      background: #FAF8F5;
+      color: #3A3A3A;
+      font-family: -apple-system, BlinkMacSystemFont, "Hiragino Kaku Gothic ProN", "Yu Gothic", sans-serif;
+      overflow: hidden;
+    }
+    #app {
+      display: none;
+      position: fixed;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      border: 0;
+    }
+    #setup {
+      display: none;
+      max-width: 400px;
+      margin: 0 auto;
+      padding: 48px 16px;
+      text-align: center;
+    }
+    #setup img {
+      width: 96px;
+      height: 96px;
+      border-radius: 22px;
+    }
+    #setup h1 {
+      font-size: 18px;
+      margin-top: 16px;
+    }
+    #setup p {
+      font-size: 13px;
+      line-height: 1.7;
+      margin-top: 12px;
+    }
+  </style>
+</head>
+<body>
+  <iframe id="app" title="ウィッシュノート"></iframe>
+  <div id="setup">
+    <img src="icons/icon-192.png" alt="">
+    <h1>ウィッシュノート</h1>
+    <p>共有された設定用リンクを、このスマホのChromeで開いてください。</p>
+  </div>
+
+  <script>
+    // アプリのURLは誰でも編集できる鍵になるので、公開するこのページには書かない。
+    // 設定用リンク（#d=デプロイID）で受け取り、端末の中にだけ保存する。
+    var STORAGE_KEY = 'wishnote_deployment_id';
+
+    function isValidId(id) {
+      return /^AKfycb[A-Za-z0-9_-]{20,}$/.test(id);
+    }
+
+    function readSavedId() {
+      try {
+        return localStorage.getItem(STORAGE_KEY);
+      } catch (e) {
+        return null;
+      }
+    }
+
+    function saveId(id) {
+      try {
+        localStorage.setItem(STORAGE_KEY, id);
+      } catch (e) {}
+    }
+
+    var match = location.hash.match(/^#d=(.+)$/);
+    var deploymentId = readSavedId();
+    if (match && isValidId(match[1])) {
+      deploymentId = match[1];
+      saveId(deploymentId);
+    }
+    if (location.hash) {
+      history.replaceState(null, '', location.pathname);
+    }
+
+    if (deploymentId && isValidId(deploymentId)) {
+      var frame = document.getElementById('app');
+      frame.src = 'https://script.google.com/macros/s/' + deploymentId + '/exec';
+      frame.style.display = 'block';
+    } else {
+      document.getElementById('setup').style.display = 'block';
+    }
+  </script>
+</body>
+</html>
