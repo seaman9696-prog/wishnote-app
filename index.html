@@ -133,15 +133,26 @@
       openApp(id);
     };
 
-    var linkedId = extractId(decodeURIComponent(location.hash));
-    if (linkedId) {
-      saveId(linkedId);
-    }
-    if (location.hash) {
-      history.replaceState(null, '', location.pathname);
+    function readLinkedId() {
+      var id = extractId(decodeURIComponent(location.hash));
+      if (id) {
+        saveId(id);
+      }
+      if (location.hash) {
+        history.replaceState(null, '', location.pathname);
+      }
+      return id;
     }
 
-    var deploymentId = linkedId || readSavedId();
+    // ページを開いたままリンクを開くと再読み込みされず、#以降だけが変わる
+    window.addEventListener('hashchange', function() {
+      var id = readLinkedId();
+      if (id) {
+        openApp(id);
+      }
+    });
+
+    var deploymentId = readLinkedId() || readSavedId();
     if (deploymentId && isValidId(deploymentId)) {
       openApp(deploymentId);
     } else {
