@@ -50,6 +50,30 @@
       line-height: 1.7;
       margin-top: 12px;
     }
+    #setup input {
+      width: 100%;
+      margin-top: 16px;
+      padding: 12px;
+      border: 1px solid #DDD;
+      border-radius: 10px;
+      font-size: 16px;
+    }
+    #setup button {
+      width: 100%;
+      margin-top: 10px;
+      padding: 12px;
+      border: none;
+      border-radius: 10px;
+      background: #607B65;
+      color: #FFF;
+      font-size: 14px;
+      font-weight: bold;
+    }
+    #setupError {
+      display: none;
+      color: #C36B47;
+      font-weight: bold;
+    }
   </style>
 </head>
 <body>
@@ -57,7 +81,10 @@
   <div id="setup">
     <img src="icons/icon-192.png" alt="">
     <h1>ウィッシュノート</h1>
-    <p>共有された設定用リンクを、このスマホのChromeで開いてください。</p>
+    <p>共有された設定用リンクをコピーして、下の欄に貼り付けてください。</p>
+    <input id="setupInput" type="text" placeholder="ここに設定用リンクを貼り付け" autocomplete="off" autocapitalize="off" spellcheck="false">
+    <button id="setupButton" type="button">設定して開く</button>
+    <p id="setupError">リンクを読み取れませんでした。リンク全体をコピーできているか確認してください。</p>
   </div>
 
   <script>
@@ -66,7 +93,13 @@
     var STORAGE_KEY = 'wishnote_deployment_id';
 
     function isValidId(id) {
-      return /^AKfycb[A-Za-z0-9_-]{20,}$/.test(id);
+      return /^AKfycb[A-Za-z0-9_-]{40,}$/.test(id);
+    }
+
+    // リンク全体でもIDだけでも受け付ける。貼り付け時に混ざる改行や空白は無視する
+    function extractId(text) {
+      var found = String(text).replace(/\s+/g, '').match(/AKfycb[A-Za-z0-9_-]+/);
+      return found && isValidId(found[0]) ? found[0] : null;
     }
 
     function readSavedId() {
@@ -83,20 +116,34 @@
       } catch (e) {}
     }
 
-    var match = location.hash.match(/^#d=(.+)$/);
-    var deploymentId = readSavedId();
-    if (match && isValidId(match[1])) {
-      deploymentId = match[1];
-      saveId(deploymentId);
+    function openApp(id) {
+      var frame = document.getElementById('app');
+      frame.src = 'https://script.google.com/macros/s/' + id + '/exec';
+      frame.style.display = 'block';
+      document.getElementById('setup').style.display = 'none';
+    }
+
+    document.getElementById('setupButton').onclick = function() {
+      var id = extractId(document.getElementById('setupInput').value);
+      if (!id) {
+        document.getElementById('setupError').style.display = 'block';
+        return;
+      }
+      saveId(id);
+      openApp(id);
+    };
+
+    var linkedId = extractId(decodeURIComponent(location.hash));
+    if (linkedId) {
+      saveId(linkedId);
     }
     if (location.hash) {
       history.replaceState(null, '', location.pathname);
     }
 
+    var deploymentId = linkedId || readSavedId();
     if (deploymentId && isValidId(deploymentId)) {
-      var frame = document.getElementById('app');
-      frame.src = 'https://script.google.com/macros/s/' + deploymentId + '/exec';
-      frame.style.display = 'block';
+      openApp(deploymentId);
     } else {
       document.getElementById('setup').style.display = 'block';
     }
